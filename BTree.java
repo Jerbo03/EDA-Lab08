@@ -1,142 +1,103 @@
 public class BTree<E extends Comparable<E>> {
     // Atributos
     protected Node<E> root;
+    protected int order;
 
-    // Constructores de un BST vacio
-    public BST() {
+    // Constructores de un BST vacio, solo se ingresa el orden
+    public BTree(int n) {
         this.root = null;
+        this.order = n;
     }
 
-    public void insert(E x) {
-        this.root = insertNode(x, this.root);
+    // RECORRIDO
+    public String recorrido() {
+        if (this.root == null) return "*";
+        return imprimirRecorridoNodo(this.root);
     }
 
-    protected Node<E> insertNode(E x, Node<E> actual) {
-        Node<E> res = actual;
-        if (actual == null) {
-            res = new Node<E>(x);
-        } else {
-            // buscamos el lugar para insercion
-            int resC = actual.data.compareTo(x);
-            if (resC == 0)
-                return actual;
-            if (resC < 0)
-                res.right = insertNode(x, actual.right);
-            else
-                res.left = insertNode(x, actual.left);
-        }
-        return res;
-    }
-
-    public void remove(E x) {
-        this.root = removeNode(x, this.root);
-    }
-
-    protected Node<E> removeNode(E x, Node<E> actual) {
-        Node<E> res = actual;
-        if (actual == null) {
-            System.out.println("No such data present in BST.");
-            return null;
-        }
-        int resC = actual.data.compareTo(x);
-        if (resC < 0)
-            res.right = removeNode(x, actual.right);
-        else if (resC > 0)
-            res.left = removeNode(x, actual.left);
-        else if (actual.left != null && actual.right != null) {// dos hijos
-            res.data = minRecover(actual.right).data;
-            res.right = minRemove(actual.right);
-        } else { // 1 hijo o ninguno
-            res = (actual.left != null) ? actual.left : actual.right;
-        }
-        return res;
-    }
-
-    // Elimina el menor de la izquierda de un nodo
-    protected Node<E> minRemove(Node<E> actual) {
-        if (actual.left != null) { // busca el minimo
-            actual.left = minRemove(actual.left);
-        } else { // elimina el minimo
-            actual = actual.right;
-        }
-        return actual;
-    }
-
-    protected Node<E> minRecover(Node<E> actual) {
-        if (actual.left == null) { // busca el minimo
-            return actual;
-        }
-        return minRecover(actual.left);
-    }
-
-    public boolean search(E x) {
-        Node<E> res = searchNode(x, root);
-        if (res == null) {
-            System.out.println(x + " not found.");
-            return false;
-        }
-        System.out.println(x + " is present in given BST.");
-        return true;
-    }
-
-    protected Node<E> searchNode(E x, Node<E> n) {
-        if (n == null)
-            return null;
-        else {
-            int resC = n.data.compareTo(x);
-            if (resC < 0)
-                return searchNode(x, n.right);
-            else if (resC > 0)
-                return searchNode(x, n.left);
-            else
-                return n;
-        }
-    }
-
-    public boolean isEmpty() {
-        return this.root == null;
-    }
-
-    public String postOrder() {
-        if (this.root != null)
-            return postOrder(this.root);
-        else
-            return "*";
-    }
-
-    public String preOrder() {
-        if (this.root != null)
-            return preOrder(this.root);
-        else
-            return "*";
-    }
-
-    protected String postOrder(Node<E> actual) {
+    public String imprimirRecorridoNodo(Node<E> actual) {
         String res = "";
-        if (actual.left != null)
-            res += postOrder(actual.left);
-        if (actual.right != null)
-            res += postOrder(actual.right);
-        return res + actual.data.toString() + " ";
-    }
-
-    protected String preOrder(Node<E> actual) {
-        String res = actual.data.toString() + " ";
-        if (actual.left != null)
-            res += preOrder(actual.left);
-        if (actual.right != null)
-            res += preOrder(actual.right);
+        res += imprimirRecorridoKey(actual.first);
         return res;
     }
 
-    public static void main(String [] args){
-        BST<Integer> tree = new BST<Integer>();
+    public String imprimirRecorridoKey(Key<E> actual) {
+        if(actual==null) return "";
+        String res = "";
+        if (actual.left != null) res += imprimirRecorridoNodo(actual.left);
+        return res + actual.value.toString() + " " + imprimirRecorridoKey(actual.next);
+    }
 
-        Integer array [] = {1, 2,3, 4, 5};
+    // BUSQUEDA
+    public Node<E> search(E x) {
+        return searchNode(x, this.root, false);
+    }
 
-        for(Integer value : array)
-            tree.insert(value);
+    public Node<E> searchNode(E x, Node<E> n, boolean insercion) {
+        if(n == null) return null;
+        Node<E> res = n;
+        Key<E> actual = n.first;
+        Key<E> anterior = actual;
+        while(actual != null) {
+            if (actual.value.compareTo(x) == 0) return n;
+            if (actual.value.compareTo(x) > 0) {
+                res = searchNode(x, actual.left, insercion);
+                break;}
+            anterior = actual;
+            actual = actual.next;
+        }
+        if (actual == null && anterior.value.compareTo(x) < 0)
+            res = searchNode(x, anterior.right, insercion);
+        if (res == null && insercion) return n;
+        return res;
+    }
 
-        System.out.println(tree.postOrder());
+    // INSERCIÓN
+    public void insert(E x) {
+        Node<E> res = searchNode(x, this.root, true);
+        res.insert(x);
+        if(res.size == order) overflow(res);
+    }
+
+    public void overflow(Node<E> n) {
+        int derecha = (order-1)/2;
+        Node<E> parent = getParent(n);
+        Node<E> r = new Node<E>();
+        Node<E> l = new Node<E>();
+        for(int i=0; i < derecha; i++) {
+            r.insert(n.pop().value);
+        }
+        E m = n.pop().value;
+        parent.insert(m);
+        while (n.size > 0) {
+            l.insert(n.pop().value);
+        }
+        parent.getPrevByValue(m).right = l;
+        parent.getByValue(m).left = l;
+        parent.getByValue(m).right = r;
+        parent.getByValue(m).next.left = r;
+
+        if (parent.size == order) overflow(parent);
+    }
+
+    public Node<E> getParent(Node<E> n) {
+        if (n == null || n == root)  return null;
+        return getParentNode(root, n.first.value);
+    }
+
+    public Node<E> getParentNode(Node<E> a, E v) {
+        if(a==null) return null;
+        Key<E> key = a.first;
+        while(key.next != null) {
+            if (key.left.first.value.compareTo(v) == 0) return a;
+            key = key.next;
+        }
+        if (key.value.compareTo(v) > 0) {
+            if (key.left.first.value.compareTo(v) == 0) return a;
+            return getParentNode(key.left, v);
+        } else {
+            if (key.right.first.value.compareTo(v) == 0) return a;
+            return getParentNode(key.right, v);
+        }
     }
 }
