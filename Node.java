@@ -155,6 +155,23 @@ public class Node<E extends Comparable<E>> {
         return (actual.value.compareTo(v) == 0) || findKey(v, actual.next);
     }
 
+    public void insert(Key<E> v) {
+        if (find(v.value)) return;
+        if (isEmpty() || first.value.compareTo(v.value) > 0) addFirst(v.value);
+        first.next = insertKey(v, first.next);
+        size++;
+    }
+
+    public Key<E> insertKey(Key<E> v, Key<E> k) {
+        Key<E> actual = k;
+        if (actual.next.value.compareTo(v.value) > 0) {
+            v.next = actual;
+            return v;
+        }
+        actual.next = insertKey(v, actual.next);
+        return actual;
+    }
+
     public void insert(E v) {
         if(find(v)) return;
         if(isEmpty() || first.value.compareTo(v) > 0) addFirst(v);
@@ -173,6 +190,20 @@ public class Node<E extends Comparable<E>> {
     public Key<E> pop() {
         Key<E> temp = getLast();
         removeLast();
+        size--;
         return temp;
+    }
+
+    public Key<E> getByValue(E v) {
+        if (isEmpty() || !(find(v))) return null;
+        if (size == 1) return getFirst();
+        return getPrevByValue(v).next;
+    }
+
+    public Key<E> getPrevByValue(E v) {
+        if (isEmpty() || size == 1 || !(find(v))) return null;
+        Key<E> actual = getFirst();
+        while (actual.next.value.compareTo(v) != 0) actual = actual.next;
+        return actual;
     }
 }
